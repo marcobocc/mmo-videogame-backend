@@ -9,9 +9,9 @@
         <version>3.5.10</version>
         <relativePath/>
     </parent>
-    <groupId>com.training</groupId>
-    <artifactId>auth_service</artifactId>
-    <name>authentication-service</name>
+    <groupId>io.mmo</groupId>
+    <artifactId>auth-service</artifactId>
+    <name>auth-service</name>
     <version>0.0.1-SNAPSHOT</version>
     <properties>
         <java.version>21</java.version>

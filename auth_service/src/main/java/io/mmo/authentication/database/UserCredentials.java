@@ -1,4 +1,4 @@
-package io.mmorpg.authentication.database;
+package io.mmo.authentication.database;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
