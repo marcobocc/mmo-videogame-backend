@@ -1,0 +1,177 @@
+# ---------------------------------
+# ConfigMap
+# ---------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-config
+  namespace: default
+data:
+  POSTGRES_DB: auth_postgres_db
+  JWT_EXPIRATION_MS: "5000"
+
+---
+# ---------------------------------
+# PersistentVolumeClaim
+# ---------------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: auth-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+# ---------------------------------
+# Postgres Deployment
+# ---------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-postgres
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-postgres
+  template:
+    metadata:
+      labels:
+        app: auth-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-data
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: auth-pvc
+
+---
+# ---------------------------------
+# Postgres Service
+# ---------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-postgres-svc
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+# ---------------------------------
+# App Deployment
+# ---------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-app
+  template:
+    metadata:
+      labels:
+        app: auth-app
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Postgres..."
+              until nc -z auth-postgres-svc 5432; do
+                echo "Postgres is unavailable - sleeping"
+                sleep 2
+              done
+              echo "Postgres is up"
+      containers:
+        - name: auth-app
+          image: auth-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: POSTGRES_SERVICE
+              value: auth-postgres-svc
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: POSTGRES_DB
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: JWT_SECRET
+            - name: JWT_EXPIRATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-config
+                  key: JWT_EXPIRATION_MS
+
+---
+# ---------------------------------
+# App Service
+# ---------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-app-svc
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-app
+  ports:
+    - port: 8080
+      targetPort: 8080
