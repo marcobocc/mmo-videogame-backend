@@ -3,9 +3,9 @@ spring:
     name: authentication-service
 
   datasource:
-    url: jdbc:postgresql://${POSTGRES_SERVICE}:5432/${POSTGRES_DB}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:postgresql://${AUTH_POSTGRES_SVC}:5432/${AUTH_POSTGRES_DB}
+    username: ${AUTH_POSTGRES_USER}
+    password: ${AUTH_POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
