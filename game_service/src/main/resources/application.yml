@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: game-service
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION_MS}
