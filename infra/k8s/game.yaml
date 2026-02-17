@@ -1,0 +1,178 @@
+# ---------------------------------
+# ConfigMap
+# ---------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: game-config
+  namespace: default
+data:
+  GAME_POSTGRES_DB: game_postgres_db
+  WEBSOCKET_ENDPOINT: ws/game
+
+---
+# ---------------------------------
+# PersistentVolumeClaim
+# ---------------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: game-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: standard
+
+---
+# ---------------------------------
+# Postgres Deployment
+# ---------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-postgres
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: game-postgres
+  template:
+    metadata:
+      labels:
+        app: game-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: game-config
+                  key: GAME_POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: GAME_POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: GAME_POSTGRES_PASSWORD
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/gamedata
+              name: game-postgres-data
+      volumes:
+        - name: game-postgres-data
+          persistentVolumeClaim:
+            claimName: game-pvc
+
+---
+# ---------------------------------
+# Postgres Service
+# ---------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: game-postgres-svc
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: game-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+# ---------------------------------
+# App Deployment
+# ---------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: game-app
+  template:
+    metadata:
+      labels:
+        app: game-app
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for Postgres..."
+              until nc -z game-postgres-svc 5432; do
+                echo "Postgres is unavailable - sleeping"
+                sleep 2
+              done
+              echo "Postgres is up"
+      containers:
+        - name: game-app
+          image: game-app:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: POSTGRES_SERVICE
+              value: game-postgres-svc
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: game-config
+                  key: GAME_POSTGRES_DB
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: GAME_POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: GAME_POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: secrets
+                  key: JWT_SECRET
+            - name: WEBSOCKET_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: game-config
+                  key: WEBSOCKET_ENDPOINT
+
+---
+# ---------------------------------
+# App Service
+# ---------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: game-app-svc
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: game-app
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
