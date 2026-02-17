@@ -5,3 +5,7 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION_MS}
+
+websocket:
+  endpoint: ${WEBSOCKET_ENDPOINT}
+  allowed-origins: "*"
