@@ -1,8 +1,6 @@
 package io.mmo.websocket;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import io.mmo.JwtProperties;
+import io.mmo.JwtValidationException;
 import io.mmo.JwtValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,37 +10,35 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.socket.WebSocketHandler;
 
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class JwtHandshakeInterceptorTest {
 
-    private JwtHandshakeInterceptor interceptor;
     private JwtValidator jwtValidator;
-    private Key key;
+    private JwtHandshakeInterceptor interceptor;
 
     @BeforeEach
     void setup() {
-        JwtProperties properties = new JwtProperties();
-        properties.setSecret("verylongsecuresecretkeyforjwt1234567890!");
-        jwtValidator = new JwtValidator(properties);
+        jwtValidator = mock(JwtValidator.class);
         interceptor = new JwtHandshakeInterceptor(jwtValidator);
-        key = Keys.hmacShaKeyFor(properties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
-    void beforeHandshakeValidTokenAllowsConnection() {
-        String token = Jwts.builder()
-                           .setSubject("player1")
-                           .signWith(key)
-                           .compact();
+    void beforeHandshakeValidTokenAllowsConnection() throws JwtValidationException {
+        String token = "validtoken";
+        String username = "player1";
+
+        // Mock JwtValidator to return the username for this token
+        when(jwtValidator.getUsernameFromToken(token)).thenReturn(username);
 
         ServerHttpRequest request = mock(ServerHttpRequest.class);
         ServerHttpResponse response = mock(ServerHttpResponse.class);
@@ -56,25 +52,33 @@ class JwtHandshakeInterceptorTest {
         boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
 
         assertThat(result).isTrue();
-        assertThat(attributes).containsKey("username");
-        assertThat(attributes.get("username")).isEqualTo("player1");
+        assertThat(attributes).containsEntry("username", username);
+        verify(jwtValidator).getUsernameFromToken(token);
+        verify(response, never()).setStatusCode(any());
     }
 
     @Test
-    void beforeHandshakeInvalidTokenBlocksConnection() {
+    void beforeHandshakeInvalidTokenBlocksConnection() throws JwtValidationException {
+        String token = "invalidtoken";
+
+        // Mock JwtValidator to throw exception for this token
+        when(jwtValidator.getUsernameFromToken(token))
+                .thenThrow(new JwtValidationException("Invalid JWT"));
+
         ServerHttpRequest request = mock(ServerHttpRequest.class);
         ServerHttpResponse response = mock(ServerHttpResponse.class);
         WebSocketHandler wsHandler = mock(WebSocketHandler.class);
         Map<String, Object> attributes = new HashMap<>();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer invalidtoken");
+        headers.add("Authorization", "Bearer " + token);
         when(request.getHeaders()).thenReturn(headers);
 
         boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
 
         assertThat(result).isFalse();
         assertThat(attributes).doesNotContainKey("username");
+        verify(jwtValidator).getUsernameFromToken(token);
         verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
     }
 
@@ -91,6 +95,26 @@ class JwtHandshakeInterceptorTest {
 
         assertThat(result).isFalse();
         assertThat(attributes).doesNotContainKey("username");
+        verifyNoInteractions(jwtValidator);
+        verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void beforeHandshakeNonBearerHeaderBlocksConnection() {
+        ServerHttpRequest request = mock(ServerHttpRequest.class);
+        ServerHttpResponse response = mock(ServerHttpResponse.class);
+        WebSocketHandler wsHandler = mock(WebSocketHandler.class);
+        Map<String, Object> attributes = new HashMap<>();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Token sometoken"); // Not starting with "Bearer "
+        when(request.getHeaders()).thenReturn(headers);
+
+        boolean result = interceptor.beforeHandshake(request, response, wsHandler, attributes);
+
+        assertThat(result).isFalse();
+        assertThat(attributes).doesNotContainKey("username");
+        verifyNoInteractions(jwtValidator);
         verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
     }
 }

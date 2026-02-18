@@ -1,9 +1,10 @@
 package io.mmo.websocket;
 
-import io.jsonwebtoken.Claims;
+import io.mmo.JwtValidationException;
 import io.mmo.JwtValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.lang.NonNull;
@@ -28,24 +29,31 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
                                    @NonNull ServerHttpResponse response,
                                    @NonNull WebSocketHandler wsHandler,
                                    @NonNull Map<String, Object> attributes) {
+        LOGGER.info("JwtHandshakeInterceptor: beforeHandshake called for URI: {}", request.getURI());
 
         String authHeader = request.getHeaders().getFirst("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            LOGGER.warn("Missing or invalid Authorization header");
-            response.setStatusCode(org.springframework.http.HttpStatus.UNAUTHORIZED);
+        if (authHeader == null) {
+            LOGGER.warn("Authorization header missing");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            return false;
+        }
+
+        if (!authHeader.startsWith("Bearer ")) {
+            LOGGER.warn("Authorization header does not contain Bearer token");
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
 
         String token = authHeader.substring(7);
         try {
-            Claims claims = jwtValidator.validateToken(token);
-            String username = claims.getSubject();
+            String username = jwtValidator.getUsernameFromToken(token);
             attributes.put("username", username);
             LOGGER.info("WebSocket JWT validated for user '{}'", username);
             return true;
-        } catch (Exception e) {
+
+        } catch (JwtValidationException e) {
             LOGGER.warn("JWT validation failed: {}", e.getMessage());
-            response.setStatusCode(org.springframework.http.HttpStatus.UNAUTHORIZED);
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }
     }

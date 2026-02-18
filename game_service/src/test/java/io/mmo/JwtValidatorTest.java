@@ -1,11 +1,8 @@
 package io.mmo;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +12,6 @@ import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.within;
 
 class JwtValidatorTest {
 
@@ -31,7 +27,7 @@ class JwtValidatorTest {
     }
 
     @Test
-    void validateTokenShouldReturnClaimsForValidToken() {
+    void validateTokenShouldReturnClaimsForValidToken() throws JwtValidationException {
         String username = "player1";
         Date now = new Date();
         Date expiry = new Date(now.getTime() + 60_000);
@@ -42,16 +38,15 @@ class JwtValidatorTest {
                            .signWith(key, SignatureAlgorithm.HS256)
                            .compact();
 
-        Claims claims = validator.validateToken(token);
+        String result = validator.getUsernameFromToken(token); // you can still test getUsernameFromToken
 
-        assertThat(claims).isNotNull();
-        assertThat(claims.getSubject()).isEqualTo(username);
-        assertThat(claims.getExpiration().getTime()).isCloseTo(now.getTime() + 60_000, within(1000L));
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(username);
     }
 
     @Test
-    void getUsernameShouldReturnCorrectSubject() {
-        String username = "player2";
+    void getUsernameFromTokenShouldReturnCorrectSubject() throws JwtValidationException {
+        String username = "player1";
         Date now = new Date();
         Date expiry = new Date(now.getTime() + 60_000);
         String token = Jwts.builder()
@@ -61,13 +56,13 @@ class JwtValidatorTest {
                            .signWith(key, SignatureAlgorithm.HS256)
                            .compact();
 
-        String extracted = validator.getUsername(token);
+        String extracted = validator.getUsernameFromToken(token);
         assertThat(extracted).isEqualTo(username);
     }
 
     @Test
     void validateTokenShouldThrowForExpiredToken() {
-        String username = "player3";
+        String username = "player1";
         Date now = new Date();
         Date past = new Date(now.getTime() - 1_000);
         String token = Jwts.builder()
@@ -77,13 +72,14 @@ class JwtValidatorTest {
                            .signWith(key, SignatureAlgorithm.HS256)
                            .compact();
 
-        assertThatThrownBy(() -> validator.validateToken(token))
-                .isInstanceOf(ExpiredJwtException.class);
+        assertThatThrownBy(() -> validator.getUsernameFromToken(token))
+                .isInstanceOf(JwtValidationException.class)
+                .hasMessageContaining("expired");
     }
 
     @Test
     void validateTokenShouldThrowForInvalidSignature() {
-        String username = "player4";
+        String username = "player1";
         Date now = new Date();
         Date expiry = new Date(now.getTime() + 60_000);
         Key wrongKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
@@ -94,7 +90,8 @@ class JwtValidatorTest {
                            .signWith(wrongKey, SignatureAlgorithm.HS256)
                            .compact();
 
-        assertThatThrownBy(() -> validator.validateToken(token))
-                .isInstanceOf(SignatureException.class);
+        assertThatThrownBy(() -> validator.getUsernameFromToken(token))
+                .isInstanceOf(JwtValidationException.class)
+                .hasMessageContaining("Invalid JWT signature");
     }
 }
