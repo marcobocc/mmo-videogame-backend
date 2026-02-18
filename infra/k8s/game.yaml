@@ -8,7 +8,7 @@ metadata:
   namespace: default
 data:
   GAME_POSTGRES_DB: game_postgres_db
-  WEBSOCKET_ENDPOINT: ws/game
+  WEBSOCKET_ENDPOINT: /ws/game
 
 ---
 # ---------------------------------
