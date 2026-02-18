@@ -3,11 +3,12 @@
 This document provides instructions for setting up, testing, and debugging the MMO backend locally.
 
 ---
-## Local deployment
+## How to deploy locally with Minikube
 
 ### 1. Check prerequisites
 
-Local testing requires Docker, Minikube, kubectl and Python3 to be installed. You can verify that these are installed on your machine by running:
+The project requires Docker, Minikube, kubectl and Python3 to be installed. 
+You can verify that these are installed on your machine by running:
 
 ```bash
 docker --version
@@ -16,9 +17,9 @@ kubectl version --client
 python3 --version
 ````
 
-### 2. Deploy the application stack
+### 2. Deploy the backend stack
 
-Kubernetes manifest files and deployment scripts are located in the `devops/` folder. 
+Kubernetes manifest files and deployment scripts are located in the `devops/` folder.
 You can conveniently (re-)deploy the entire application stack locally in a Minikube cluster by running:
 
 ```bash
@@ -40,37 +41,29 @@ This script:
 
 ### 3. Verify deployment
 
-Check pods and services:
+Verify that your deployment was successful and that all services are reachable locally by running integration tests.
 
-```bash
-kubectl get pods
-kubectl get svc
-```
-
-Ensure that no pods are in `CrashLoopBackOff` or `Error` state.
-
-Check ingress:
-
-```bash
-kubectl get svc --namespace ingress-nginx
-```
-
-Expected output:
-
-```pgsql
-NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
-ingress-nginx-controller             NodePort    10.96.144.125   <none>        80:31173/TCP,443:32571/TCP   16m
-ingress-nginx-controller-admission   ClusterIP   10.104.8.247    <none>        443/TCP                      16m
-```
-
----
-## Sending requests
-### 1. Forward ports
+First, open a new terminal and run the following:
 
 ```bash
 kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 8080:80 8443:443
 ```
-Keep this running in another terminal while testing.
+
+Then, in another terminal, run:
+
+```bash
+pytest -v devops/integration --auth-service-url=http://localhost:8080/auth --game-service-url=ws://localhost:8080/ws/game
+```
+
+---
+## How to send requests from CLI
+### 1. Forward ports
+
+First, open a new terminal and run the following:
+
+```bash
+kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 8080:80 8443:443
+```
 
 ### 2. Test the authentication service
 
@@ -105,20 +98,28 @@ Expected response:
 ---
 
 ## Debugging
-**View logs:**
+
+**Verify state of cluster:**
+
+Check pods and services:
 
 ```bash
-kubectl logs deployment/auth-app
+kubectl get pods
+kubectl get svc
 ```
 
-**Describe pods:**
+Ensure that no pods are in `CrashLoopBackOff` or `Error` state.
+
+Check ingress:
 
 ```bash
-kubectl describe pod <pod-name>
+kubectl get svc --namespace ingress-nginx
 ```
 
-**Access pod shell:**
+Expected output:
 
-```bash
-kubectl exec -it <pod-name> -- /bin/sh
+```pgsql
+NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             NodePort    10.96.144.125   <none>        80:31173/TCP,443:32571/TCP   16m
+ingress-nginx-controller-admission   ClusterIP   10.104.8.247    <none>        443/TCP                      16m
 ```
