@@ -36,7 +36,38 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
+# Logs and temp files
 *.log
 *.tmp
 *.swp
-``
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.manifest
+*.spec
+pip-wheel-metadata/
+*.whl
+.env
+.venv/
+env/
+venv/
+ENV/
+.ENV/
+*.env
+.idea/ # if Python project in PyCharm
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache/
