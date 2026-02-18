@@ -21,8 +21,11 @@ python3 --version
 Kubernetes manifest files and deployment scripts are located in the `infra/` folder. You can conveniently (re-)deploy the entire application stack by running:
 
 ```bash
-cd infra
-python3 deploy.py
+python3 infra/deployment/minikube.py
+
+Optional args:
+    --service     # Deploys only specific backend service (e.g., auth, game)
+    --teardown    # Deletes existing cluster (does not automatically redeploy)
 ```
 
 This script:
@@ -48,7 +51,7 @@ Ensure that no pods are in `CrashLoopBackOff` or `Error` state.
 Check ingress:
 
 ```bash
-kubectl get svc -n ingress-nginx
+kubectl get svc --namespace ingress-nginx
 ```
 
 Expected output:
