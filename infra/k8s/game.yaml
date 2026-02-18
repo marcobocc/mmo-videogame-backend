@@ -127,7 +127,7 @@ spec:
       containers:
         - name: game-app
           image: game-app:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
           env:
