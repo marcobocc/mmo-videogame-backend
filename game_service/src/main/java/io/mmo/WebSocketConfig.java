@@ -1,5 +1,6 @@
 package io.mmo;
 
+import io.mmo.websocket.JwtHandshakeInterceptor;
 import io.mmo.websocket.WebSocketHandler;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,16 +18,20 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final WebSocketHandler handler;
+    private final JwtHandshakeInterceptor jwtInterceptor;
+
     private String endpoint;
     private String allowedOrigins;
 
-    public WebSocketConfig(WebSocketHandler handler) {
+    public WebSocketConfig(WebSocketHandler handler, JwtHandshakeInterceptor jwtInterceptor) {
         this.handler = handler;
+        this.jwtInterceptor = jwtInterceptor;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(handler, endpoint)
+                .addInterceptors(jwtInterceptor)
                 .setAllowedOrigins(allowedOrigins.split(","));
     }
 }
