@@ -11,17 +11,18 @@ MINIKUBE_PROFILE = "mmo-cluster"
 class MinikubeDeployer:
     def __init__(self, root_dir: Path, profile: str = MINIKUBE_PROFILE):
         self.root_dir = root_dir.resolve()
-        self.k8s_dir = self.root_dir / "infra/k8s"
+        self.services_dir = self.root_dir / "services"
+        self.k8s_dir = self.root_dir / "devops/k8s"
         self.profile = profile
         self.services = {
             "auth": {
                 "image": "auth-app:latest",
-                "service_dir": self.root_dir / "auth_service",
+                "service_dir": self.services_dir / "auth_service",
                 "manifests": ["secrets.yaml", "auth.yaml"]
             },
             "game": {
                 "image": "game-app:latest",
-                "service_dir": self.root_dir / "game_service",
+                "service_dir": self.services_dir / "game_service",
                 "manifests": ["secrets.yaml", "game.yaml"]
             }
         }

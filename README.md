@@ -18,10 +18,11 @@ python3 --version
 
 ### 2. Deploy the application stack
 
-Kubernetes manifest files and deployment scripts are located in the `infra/` folder. You can conveniently (re-)deploy the entire application stack by running:
+Kubernetes manifest files and deployment scripts are located in the `devops/` folder. 
+You can conveniently (re-)deploy the entire application stack locally in a Minikube cluster by running:
 
 ```bash
-python3 infra/deployment/minikube.py
+python3 devops/deploy_minikube.py
 
 Optional args:
     --service     # Deploys only specific backend service (e.g., auth, game)
