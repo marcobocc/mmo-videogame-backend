@@ -1,14 +1,32 @@
 # MMO Backend – Local Setup, Testing & Troubleshooting
 
 This document provides instructions for setting up, testing, and debugging the MMO backend locally.
+The project requires Docker, Minikube, kubectl, Java 21 and Python3 to be installed.
 
 ---
-## How to deploy locally with Minikube
+## Setting up the backend locally
+### Automated setup (recommended)
+This script automates the local deployment and testing of the backend stack:
 
-### 1. Check prerequisites
+```bash
+python3 devops/deploy_and_test.py
 
-The project requires Docker, Minikube, kubectl and Python3 to be installed. 
-You can verify that these are installed on your machine by running:
+Optional args:
+    --service     # Deploys only specific backend service (e.g., auth, game)
+    --teardown    # Deletes existing cluster (does not automatically redeploy)
+````
+
+The script performs the following steps:
+1. Checks prerequisites
+2. Sets up a virtual environment and installs Python dependencies
+3. Builds and deploys services and ingress on a Minikube cluster. Optionally you can build/deploy only specific services or destroys the whole cluster to start from scratch.
+4. Runs integration tests to ensure all services have deployed successfully and are reachable
+
+### Manual setup
+
+#### 1. Check prerequisites
+
+You can verify that the prerequisites are installed on your machine by running:
 
 ```bash
 docker --version
@@ -17,7 +35,7 @@ kubectl version --client
 python3 --version
 ````
 
-### 2. Deploy the backend stack
+#### 2. Deploy the backend stack
 
 Kubernetes manifest files and deployment scripts are located in the `devops/` folder.
 You can conveniently (re-)deploy the entire application stack locally in a Minikube cluster by running:
@@ -39,7 +57,7 @@ This script:
 5. Restarts the deployment
 6. Waits for rollout completion
 
-### 3. Verify deployment
+#### 3. Verify deployment
 
 Verify that your deployment was successful and that all services are reachable locally by running integration tests.
 
