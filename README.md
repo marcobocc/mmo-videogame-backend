@@ -36,58 +36,59 @@ This script:
 
 ### 3. Verify deployment
 
-Check pods:
+Check pods and services:
 
 ```bash
 kubectl get pods
-```
-
-Check services:
-
-```bash
 kubectl get svc
 ```
 
-Ensure:
+Ensure that no pods are in `CrashLoopBackOff` or `Error` state.
 
-* PostgreSQL pod is running
-* Auth service pod is running
-* No pods in `CrashLoopBackOff` or `Error` state
+Check ingress:
+
+```bash
+kubectl get svc -n ingress-nginx
+```
+
+Expected output:
+
+```pgsql
+NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             NodePort    10.96.144.125   <none>        80:31173/TCP,443:32571/TCP   16m
+ingress-nginx-controller-admission   ClusterIP   10.104.8.247    <none>        443/TCP                      16m
+```
 
 ---
-
-## Test the authentication service
-
-In another terminal window, expose the auth service:
+## Sending requests
+### 1. Forward ports
 
 ```bash
-minikube service auth-app-svc --url
+kubectl port-forward --namespace ingress-nginx svc/ingress-nginx-controller 8080:80 8443:443
 ```
+Keep this running in another terminal while testing.
 
-Example output:
+### 2. Test the authentication service
 
-```
-http://127.0.0.1:30000
-```
-
-In the following commands, replace `<BASE_URL>` with the URL from Minikube above.
-
-#### Registering new user:
+**Registering new user:**
 
 ```bash
-curl -X POST <BASE_URL>/auth/register \
+curl http://127.0.0.1:8080/auth/register \
+  -H "Host: mmo.local" \
   -H "Content-Type: application/json" \
   -d '{"username":"player1","password":"secret"}'
+
 ```
 
 Expected response:
 
 * `201 Created` if registration succeeds
 
-#### Logging in as existing user:
+**Logging in as existing user:**
 
 ```bash
-curl -X POST <BASE_URL>/auth/login \
+curl http://127.0.0.1:8080/auth/login \
+  -H "Host: mmo.local" \
   -H "Content-Type: application/json" \
   -d '{"username":"player1","password":"secret"}'
 ```
@@ -95,66 +96,25 @@ curl -X POST <BASE_URL>/auth/login \
 Expected response:
 
 * `200 OK`
-* JSON containing a JWT token:
-
-```json
-{
-  "jwt": "<generated-token>"
-}
-```
+* JSON containing a JWT token
 
 ---
 
 ## Debugging
-
-### View logs
-
-Auth service:
+**View logs:**
 
 ```bash
 kubectl logs deployment/auth-app
 ```
 
-PostgreSQL:
-
-```bash
-kubectl logs <postgres-pod-name>
-```
-
-### Describe pods
+**Describe pods:**
 
 ```bash
 kubectl describe pod <pod-name>
 ```
 
-Look for:
-
-* Events showing container start failures
-* Image pull errors
-* Readiness probe failures
-
-### Access pod shell
+**Access pod shell:**
 
 ```bash
 kubectl exec -it <pod-name> -- /bin/sh
-```
-
-Inspect files, environment variables, or network connectivity.
-
----
-
-## Reset local environment
-
-If the environment becomes inconsistent:
-
-```bash
-minikube delete
-minikube start --driver=docker
-```
-
-Then redeploy:
-
-```bash
-cd infra
-python3 deploy.py
 ```
