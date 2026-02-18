@@ -5,7 +5,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: game-config
-  namespace: default
 data:
   GAME_POSTGRES_DB: game_postgres_db
   WEBSOCKET_ENDPOINT: /ws/game
@@ -18,7 +17,6 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: game-pvc
-  namespace: default
 spec:
   accessModes:
     - ReadWriteOnce
@@ -35,7 +33,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: game-postgres
-  namespace: default
 spec:
   replicas: 1
   selector:
@@ -68,7 +65,7 @@ spec:
                   name: secrets
                   key: GAME_POSTGRES_PASSWORD
           volumeMounts:
-            - mountPath: /var/lib/postgresql/gamedata
+            - mountPath: /var/lib/postgresql/data
               name: game-postgres-data
       volumes:
         - name: game-postgres-data
@@ -83,7 +80,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: game-postgres-svc
-  namespace: default
 spec:
   type: ClusterIP
   selector:
@@ -100,7 +96,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: game-app
-  namespace: default
 spec:
   replicas: 1
   selector:
@@ -113,17 +108,11 @@ spec:
     spec:
       initContainers:
         - name: wait-for-postgres
-          image: busybox
+          image: postgres:15
           command:
             - sh
             - -c
-            - |
-              echo "Waiting for Postgres..."
-              until nc -z game-postgres-svc 5432; do
-                echo "Postgres is unavailable - sleeping"
-                sleep 2
-              done
-              echo "Postgres is up"
+            - until pg_isready -h game-postgres-svc; do sleep 2; done
       containers:
         - name: game-app
           image: game-app:latest
@@ -131,19 +120,19 @@ spec:
           ports:
             - containerPort: 8080
           env:
-            - name: POSTGRES_SERVICE
+            - name: GAME_POSTGRES_SVC
               value: game-postgres-svc
-            - name: POSTGRES_DB
+            - name: GAME_POSTGRES_DB
               valueFrom:
                 configMapKeyRef:
                   name: game-config
                   key: GAME_POSTGRES_DB
-            - name: SPRING_DATASOURCE_USERNAME
+            - name: GAME_POSTGRES_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: secrets
                   key: GAME_POSTGRES_USER
-            - name: SPRING_DATASOURCE_PASSWORD
+            - name: GAME_POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: secrets
@@ -167,7 +156,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: game-app-svc
-  namespace: default
 spec:
   type: ClusterIP
   selector:
