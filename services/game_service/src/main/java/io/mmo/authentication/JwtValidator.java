@@ -1,4 +1,4 @@
-package io.mmo.security;
+package io.mmo.authentication;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -9,25 +9,28 @@ import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 
-@Service
+@Component
 public class JwtValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtValidator.class);
     private final Key key;
 
-    public JwtValidator(JwtProperties properties) {
-        this.key = Keys.hmacShaKeyFor(properties.getSecret().getBytes(StandardCharsets.UTF_8));
+    public JwtValidator(@NonNull String jwtSecret) {
+        this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
+    @NonNull
     public String getUsernameFromToken(String token) throws JwtValidationException {
         return validateToken(token).getSubject();
     }
 
+    @NonNull
     private Claims validateToken(String token) throws JwtValidationException {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -40,7 +43,6 @@ public class JwtValidator {
             if (username == null || username.isEmpty()) {
                 throw new JwtValidationException("JWT token does not contain a subject");
             }
-
             return claims;
 
         } catch (SignatureException e) {

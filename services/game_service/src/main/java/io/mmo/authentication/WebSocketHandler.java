@@ -1,4 +1,4 @@
-package io.mmo.networking;
+package io.mmo.authentication;
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -18,21 +18,23 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final WebSocketSessionsManager sessionsManager;
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
+    public void afterConnectionEstablished(@NonNull WebSocketSession session) {
         String username = (String) session.getAttributes().get("username");
         sessionsManager.registerSession(username, session);
         LOGGER.info("User connected: {}", username);
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, @NonNull CloseStatus status) {
+    public void afterConnectionClosed(@NonNull WebSocketSession session,
+                                      @NonNull CloseStatus status) {
         String username = (String) session.getAttributes().get("username");
         sessionsManager.removeSession(username);
         LOGGER.info("User disconnected: {}", username);
     }
 
     @Override
-    protected void handleTextMessage(@NonNull WebSocketSession session, @NonNull TextMessage message) {
+    protected void handleTextMessage(@NonNull WebSocketSession session,
+                                     @NonNull TextMessage message) {
         try {
             session.sendMessage(new TextMessage("Echo: " + message.getPayload()));
         } catch (Exception e) {

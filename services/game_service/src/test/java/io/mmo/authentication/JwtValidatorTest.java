@@ -1,4 +1,4 @@
-package io.mmo.security;
+package io.mmo.authentication;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -20,10 +20,9 @@ class JwtValidatorTest {
 
     @BeforeEach
     void setup() {
-        JwtProperties properties = new JwtProperties();
-        properties.setSecret("verylongsecretkeyforjwt1234567890");
-        validator = new JwtValidator(properties);
-        key = Keys.hmacShaKeyFor(properties.getSecret().getBytes(StandardCharsets.UTF_8));
+        String jwtSecret = "verylongsecretkeyforjwt1234567890";
+        validator = new JwtValidator(jwtSecret);
+        key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
