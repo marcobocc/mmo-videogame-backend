@@ -1,4 +1,4 @@
-package io.mmo;
+package io.mmo.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;

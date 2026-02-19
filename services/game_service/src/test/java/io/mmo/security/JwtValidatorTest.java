@@ -1,4 +1,4 @@
-package io.mmo;
+package io.mmo.security;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

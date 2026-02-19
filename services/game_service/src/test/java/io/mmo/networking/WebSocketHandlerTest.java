@@ -1,4 +1,4 @@
-package io.mmo.websocket;
+package io.mmo.networking;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

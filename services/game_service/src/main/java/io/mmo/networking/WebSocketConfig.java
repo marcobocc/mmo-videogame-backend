@@ -1,7 +1,6 @@
-package io.mmo;
+package io.mmo.networking;
 
-import io.mmo.websocket.JwtHandshakeInterceptor;
-import io.mmo.websocket.WebSocketHandler;
+import io.mmo.security.JwtHandshakeInterceptor;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;

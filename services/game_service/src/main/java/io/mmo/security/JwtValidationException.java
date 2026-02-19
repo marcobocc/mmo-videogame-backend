@@ -1,4 +1,4 @@
-package io.mmo;
+package io.mmo.security;
 
 public class JwtValidationException extends RuntimeException {
     public JwtValidationException(String message) {

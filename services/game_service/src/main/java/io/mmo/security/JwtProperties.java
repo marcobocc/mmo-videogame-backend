@@ -1,4 +1,4 @@
-package io.mmo;
+package io.mmo.security;
 
 import lombok.Getter;
 import lombok.Setter;

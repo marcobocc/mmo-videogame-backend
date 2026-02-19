@@ -1,7 +1,5 @@
-package io.mmo.websocket;
+package io.mmo.security;
 
-import io.mmo.JwtValidationException;
-import io.mmo.JwtValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;

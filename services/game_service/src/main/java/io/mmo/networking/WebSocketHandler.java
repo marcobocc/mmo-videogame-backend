@@ -1,4 +1,4 @@
-package io.mmo.websocket;
+package io.mmo.networking;
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
