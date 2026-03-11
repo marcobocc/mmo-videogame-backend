@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package io.game.net;
+
+// -------------------------------------------------------
+// Command types
+// -------------------------------------------------------
+message PlaceholderCommand {
+  string text = 1;
+}
+
+// -------------------------------------------------------
+// ClientMessage
+// -------------------------------------------------------
+
+message ClientPayload {
+  oneof command {
+    PlaceholderCommand  chat = 1;
+  }
+}
+
+message ClientHeaders {
+  uint32 sequence_number = 1;
+}
+
+message ClientMessage {
+  ClientHeaders headers = 1;
+  ClientPayload payload = 2;
+}

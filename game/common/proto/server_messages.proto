@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package io.game.net;
+
+// -------------------------------------------------------
+// Event types
+// -------------------------------------------------------
+message PlaceholderEvent {
+  string text = 1;
+}
+
+// -------------------------------------------------------
+// StateUpdate — ordered list of events
+// -------------------------------------------------------
+message Event {
+  oneof type {
+    PlaceholderEvent placeholder_event = 1;
+  }
+}
+
+message StateUpdate {
+  uint64 base_tick = 1;
+  repeated Event events = 2;
+}
+
+// -------------------------------------------------------
+// ServerMessage
+// -------------------------------------------------------
+message ServerPayload {
+  oneof content {
+    StateUpdate state_update = 1;
+  }
+}
+
+message ServerHeaders {
+  uint64 tick_number = 1;
+}
+
+message ServerMessage {
+  ServerHeaders headers = 1;
+  ServerPayload payload = 2;
+}
