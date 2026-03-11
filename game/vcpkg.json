@@ -1,0 +1,19 @@
+{
+  "name": "cpp-game",
+  "version": "0.1.0",
+  "builtin-baseline": "dd930e314f529c86d2703a60d5ea7dd6573d9e5a",
+  "dependencies": [
+    "fmt",
+    "boost-filesystem",
+    "boost-system",
+    "boost-thread",
+    "boost-beast",
+    "boost-asio",
+    "boost-uuid",
+    "openssl",
+    "jwt-cpp",
+    "nlohmann-json",
+    "protobuf",
+    "gtest"
+  ]
+}
